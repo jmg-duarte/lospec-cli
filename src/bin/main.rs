@@ -39,6 +39,18 @@ async fn main() {
 
             search.execute().await
         }
-        Cli::Download { slug, path, format } => Download::new(slug, path, format).execute().await,
+        Cli::Download { slug, path, format } => {
+            Download::new(
+                slug.clone(),
+                path.unwrap_or_else(|| {
+                    std::env::current_dir()
+                        .expect("current directory to be valid")
+                        .join(slug)
+                }),
+                format,
+            )
+            .execute()
+            .await
+        }
     }
 }

@@ -61,8 +61,15 @@ pub enum Cli {
     },
     #[command(about = "Download a color palette")]
     Download {
+        /// The palette slug (for example: `fairydust-8`)
         slug: String,
-        path: PathBuf,  // TODO: make this a flag and optional
-        format: Format, // TODO: make this a flag
+
+        /// The path to download the file(s) to. Defaults to `<current_directory>/<slug>`
+        #[arg(short, long)]
+        path: Option<PathBuf>,
+
+        /// The output format
+        #[arg(short, long)]
+        format: Format,
     },
 }
