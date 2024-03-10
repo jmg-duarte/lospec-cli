@@ -3,6 +3,9 @@ name = "lospec-cli"
 version = "0.1.0"
 edition = "2021"
 
+[[bin]]
+path = "src/bin/main.rs"
+name = "lospec"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

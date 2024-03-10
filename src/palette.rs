@@ -1,45 +1,14 @@
 use std::num::ParseIntError;
 
-use colored::Colorize;
 use serde::{de::Visitor, Deserialize};
 
 type UtcDateTime = chrono::DateTime<chrono::Utc>;
 
-#[tokio::main]
-async fn main() {
-    let client = reqwest::Client::new();
-
-    let response = client
-        .get("https://lospec.com/palette-list/load")
-        .query(&[
-            ("colorNumberFilterType", "any"),
-            ("colorNumber", "8"),
-            ("page", "1"),
-            ("sortingType", "default"),
-            ("tag", ""),
-        ])
-        .send()
-        .await
-        .unwrap();
-
-    let json: Palettes = serde_json::from_slice(&response.bytes().await.unwrap()).unwrap();
-
-    for palette in &json.palettes {
-        println!("{} by {}", palette.title, palette.user.name);
-        for color in &palette.colors {
-            let colored_string = "  ".on_truecolor(color.red, color.green, color.blue);
-            print!("{}", colored_string);
-        }
-        println!();
-        println!();
-    }
-}
-
 #[derive(Debug)]
-struct Color {
-    red: u8,
-    green: u8,
-    blue: u8,
+pub struct Color {
+    pub red: u8,
+    pub green: u8,
+    pub blue: u8,
 }
 
 impl<'de> Deserialize<'de> for Color {
@@ -83,26 +52,26 @@ impl<'de> Deserialize<'de> for Color {
 }
 
 #[derive(Debug, Deserialize)]
-struct User {
-    name: String,
-    slug: String,
+pub struct User {
+    pub name: String,
+    pub slug: String,
 }
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all(deserialize = "camelCase"))]
-struct Palette {
+pub struct Palette {
     #[serde(rename(deserialize = "_id"))]
-    id: String,
-    tags: Vec<String>,
-    colors: Vec<Color>, // TODO: convert
-    title: String,
-    slug: String,
-    published_at: UtcDateTime, // TODO: convert
-    user: User,
-    created_at: UtcDateTime,
+    pub id: String,
+    pub tags: Vec<String>,
+    pub colors: Vec<Color>,
+    pub title: String,
+    pub slug: String,
+    pub published_at: UtcDateTime,
+    pub user: Option<User>,
+    pub created_at: UtcDateTime,
 }
 
 #[derive(Debug, Deserialize)]
-struct Palettes {
-    palettes: Vec<Palette>,
+pub struct Palettes {
+    pub palettes: Vec<Palette>,
 }
