@@ -1,4 +1,8 @@
+use std::path::PathBuf;
+
 use clap::{Parser, ValueEnum};
+
+use crate::cmd::download::{Download, Format};
 
 #[derive(Clone, Debug)]
 pub enum Sorting {
@@ -34,86 +38,31 @@ impl ToString for Sorting {
     }
 }
 
-#[derive(Parser)]
-pub struct Cli {
-    #[arg(long, conflicts_with_all = ["min", "exact"])]
-    max: Option<u16>,
-    #[arg(long, conflicts_with_all = ["max", "exact"])]
-    min: Option<u16>,
-    #[arg(long, conflicts_with_all = ["max", "min"])]
-    exact: Option<u16>,
+#[derive(Debug, Parser)]
+pub enum Cli {
+    #[command(about = "Search for color palettes")]
+    Search {
+        #[arg(long, conflicts_with_all = ["min", "exact"])]
+        max: Option<u16>,
+        #[arg(long, conflicts_with_all = ["max", "exact"])]
+        min: Option<u16>,
+        #[arg(long, conflicts_with_all = ["max", "min"])]
+        exact: Option<u16>,
 
-    #[arg(short, long)]
-    page: Option<u16>,
+        #[arg(short, long)]
+        page: Option<u16>,
 
-    #[arg(long, default_value_t = Sorting::Default)]
-    sorting: Sorting,
+        #[arg(long, default_value_t = Sorting::Default)]
+        sorting: Sorting,
 
-    // NOTE: expand this to perform multiple searches
-    #[arg(long)]
-    tag: Option<String>,
-}
-
-#[derive(Clone)]
-pub enum Filter {
-    Any,
-    Max(u16),
-    Min(u16),
-    Exact(u16),
-}
-
-pub struct Args {
-    pub page: u16,
-    pub filter: Filter,
-    pub sorting: Sorting,
-    pub tag: String,
-}
-
-impl Args {
-    pub fn to_query(self) -> Vec<(&'static str, String)> {
-        let mut params = vec![
-            ("page", format!("{}", self.page)),
-            ("sortingType", self.sorting.to_string()),
-            ("tag", self.tag),
-        ];
-
-        match self.filter {
-            Filter::Any => params.push(("colorNumberFilterType", "any".to_string())),
-            Filter::Max(n) => {
-                params.push(("colorNumberFilterType", "max".to_string()));
-                params.push(("colorNumber", format!("{}", n)));
-            }
-            Filter::Min(n) => {
-                params.push(("colorNumberFilterType", "min".to_string()));
-                params.push(("colorNumber", format!("{}", n)));
-            }
-            Filter::Exact(n) => {
-                params.push(("colorNumberFilterType", "exact".to_string()));
-                params.push(("colorNumber", format!("{}", n)));
-            }
-        }
-
-        params
-    }
-}
-
-impl From<Cli> for Args {
-    fn from(value: Cli) -> Self {
-        let filter = if let Some(max) = value.max {
-            Filter::Max(max)
-        } else if let Some(min) = value.min {
-            Filter::Min(min)
-        } else if let Some(exact) = value.exact {
-            Filter::Exact(exact)
-        } else {
-            Filter::Any
-        };
-
-        Args {
-            filter,
-            page: value.page.unwrap_or(1),
-            sorting: value.sorting,
-            tag: value.tag.unwrap_or("".to_string()),
-        }
-    }
+        // NOTE: expand this to perform multiple searches
+        #[arg(long)]
+        tag: Option<String>,
+    },
+    #[command(about = "Download a color palette")]
+    Download {
+        slug: String,
+        path: PathBuf,  // TODO: make this a flag and optional
+        format: Format, // TODO: make this a flag
+    },
 }

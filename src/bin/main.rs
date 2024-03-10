@@ -1,35 +1,44 @@
 use clap::Parser;
-use colored::Colorize;
-use lospec_cli::cli::{Args, Cli};
+use lospec_cli::{
+    cli::Cli,
+    cmd::{
+        download::Download,
+        search::{Filter, Search},
+    },
+};
 
 #[tokio::main]
 async fn main() {
-    let args = Args::from(Cli::parse());
+    let cli = Cli::parse();
 
-    let client = reqwest::Client::new();
+    match cli {
+        Cli::Search {
+            max,
+            min,
+            exact,
+            page,
+            sorting,
+            tag,
+        } => {
+            let filter = if let Some(max) = max {
+                Filter::Max(max)
+            } else if let Some(min) = min {
+                Filter::Min(min)
+            } else if let Some(exact) = exact {
+                Filter::Exact(exact)
+            } else {
+                Filter::Any
+            };
 
-    let response = client
-        .get("https://lospec.com/palette-list/load")
-        .query(&args.to_query())
-        .send()
-        .await
-        .unwrap();
+            let search = Search {
+                filter,
+                sorting,
+                page: page.unwrap_or(1),
+                tag: tag.unwrap_or("".to_string()),
+            };
 
-    let json: lospec_cli::palette::Palettes =
-        serde_json::from_slice(&response.bytes().await.unwrap()).unwrap();
-
-    for palette in &json.palettes {
-        if let Some(user) = &palette.user {
-            println!("{} by {}", palette.title, user.name);
-        } else {
-            println!("{}", palette.title);
+            search.execute().await
         }
-
-        for color in &palette.colors {
-            let colored_string = "  ".on_truecolor(color.red, color.green, color.blue);
-            print!("{}", colored_string);
-        }
-        println!();
-        println!();
+        Cli::Download { slug, path, format } => Download::new(slug, path, format).execute().await,
     }
 }
