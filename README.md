@@ -22,11 +22,35 @@ lospec <COMMAND>
 
 ## Installation
 
-To install Lospec CLI, follow these steps:
+### Cargo
 
-1. Clone this repository: `git clone https://github.com/lospec/lospec-cli.git`
-2. Navigate to the project directory: `cd lospec-cli`
-3. Install: `cargo install`
+To install Lospec CLI using `cargo`, run the following command:
+
+```
+cargo install lospec-cli
+```
+
+### Source
+
+To install Lospec CLI from source, follow these steps:
+
+1. Clone this repository:
+
+```
+git clone https://github.com/lospec/lospec-cli.git
+```
+
+2. Navigate to the project directory:
+
+```
+cd lospec-cli
+```
+
+3. Install:
+
+```
+cargo install --path .
+```
 
 
 ## Examples
