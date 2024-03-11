@@ -2,14 +2,15 @@
 name = "lospec-cli"
 version = "0.1.0"
 edition = "2021"
+authors = ["José Duarte <duarte.gmj@gmail.com>"]
 homepage = "https://github.com/jmg-duarte/lospec-cli"
 repository = "https://github.com/jmg-duarte/lospec-cli"
+documentation = "https://docs.rs/lospec-cli"
 readme = "README.md"
 license-file = "LICENSE"
-authors = ["José Duarte <duarte.gmj@gmail.com>"]
+description = "Lospec CLI is a command-line interface tool that allows users to interact with Lospec's color palettes conveniently. With this tool, you can search for color palettes and download them."
 keywords = ["color", "palette", "lospec", "cli"]
 categories = ["command-line-utilities", "game-development"]
-documentation = "https://docs.rs/lospec-cli"
 
 [[bin]]
 path = "src/bin/main.rs"
