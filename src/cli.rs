@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum};
 
-use crate::cmd::download::{Download, Format};
+use crate::cmd::download::Format;
 
 #[derive(Clone, Debug)]
 pub enum Sorting {

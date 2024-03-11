@@ -2,13 +2,22 @@ use clap::Parser;
 use lospec_cli::{
     cli::Cli,
     cmd::{
-        download::Download,
-        search::{Filter, Search},
+        download::{self, Download},
+        search::{self, Filter, Search},
     },
 };
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+enum Error {
+    #[error(transparent)]
+    DownloadError(#[from] download::Error),
+    #[error(transparent)]
+    SearchError(#[from] search::Error),
+}
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Error> {
     let cli = Cli::parse();
 
     match cli {
@@ -37,7 +46,7 @@ async fn main() {
                 tag: tag.unwrap_or("".to_string()),
             };
 
-            search.execute().await
+            search.execute().await?;
         }
         Cli::Download { slug, path, format } => {
             Download::new(
@@ -50,7 +59,9 @@ async fn main() {
                 format,
             )
             .execute()
-            .await
+            .await?;
         }
     }
+
+    Ok(())
 }

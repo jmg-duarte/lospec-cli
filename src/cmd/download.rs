@@ -1,7 +1,11 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use clap::{builder::PossibleValue, ValueEnum};
 use serde_json::json;
+use thiserror::Error;
 
 use crate::palette::Color;
 
@@ -11,10 +15,12 @@ pub enum Format {
     Colorset,
     /// List of hex values
     Hex,
+    // TODO: look into https://lospec.com/palettes/api
 }
 
 impl Format {
-    fn download_file_extension(&self) -> &'static str {
+    /// Return the file extension used by Lospec.
+    fn file_extension(&self) -> &'static str {
         match self {
             Format::Colorset | Format::Hex => "hex",
         }
@@ -34,10 +40,22 @@ impl ValueEnum for Format {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error(transparent)]
+    IoError(#[from] std::io::Error),
+
+    #[error(transparent)]
+    RequestError(#[from] reqwest::Error),
+}
+
 #[derive(Debug)]
 pub struct Download {
+    /// Palette slug.
     slug: String,
+    /// Output file path.
     path: PathBuf,
+    /// Output file format.
     format: Format,
 }
 
@@ -46,47 +64,61 @@ impl Download {
         Self { slug, path, format }
     }
 
-    pub async fn execute(self) {
+    /// Execute the download request.
+    pub async fn execute(self) -> Result<(), Error> {
         let client = reqwest::Client::new();
         let response = client
             .get(format!(
                 "https://lospec.com/palette-list/{}.{}",
                 self.slug,
-                self.format.download_file_extension()
+                self.format.file_extension()
             ))
             .send()
-            .await
-            .unwrap();
+            .await?;
 
         match self.format {
-            // TODO: handle already exists
             Format::Colorset => {
-                let contents = response.text().await.unwrap();
-
-                // Create the target folder
-                std::fs::create_dir_all(&self.path).unwrap();
-
-                // Create the folder's Contents.json
-                std::fs::write(self.path.join("Contents.json"), generate_folder_contents())
-                    .unwrap();
-
-                for color in contents.split("\n").filter(|s| !s.is_empty()) {
-                    let colorset_path = self.path.join(format!("{}.colorset", color));
-                    // Prepare the folder
-                    std::fs::create_dir_all(&colorset_path).unwrap();
-                    // Write all colors
-                    std::fs::write(
-                        colorset_path.join("Contents.json"),
-                        generate_contents(Color::from_str(color).unwrap()),
-                    )
-                    .unwrap();
-                }
+                let contents = response.text().await?;
+                let colors = contents.split("\n").filter(|s| !s.is_empty());
+                export_colorset(self.path, colors).map_err(Error::IoError)
             }
-            Format::Hex => std::fs::write(self.path, response.bytes().await.unwrap()).unwrap(),
+            Format::Hex => {
+                std::fs::write(self.path, response.bytes().await?).map_err(Error::IoError)
+            }
         }
     }
 }
 
+/// Export a pallete as `.colorset`.
+fn export_colorset<'a, P, I>(path: P, colors: I) -> Result<(), std::io::Error>
+where
+    P: AsRef<Path>,
+    I: Iterator<Item = &'a str>,
+{
+    // Create the target folder
+    std::fs::create_dir_all(&path)?;
+
+    // Create the folder's Contents.json
+    std::fs::write(
+        path.as_ref().join("Contents.json"),
+        generate_folder_contents(),
+    )?;
+
+    for color in colors {
+        let colorset_path = path.as_ref().join(format!("{}.colorset", color));
+        // Prepare the folder
+        std::fs::create_dir_all(&colorset_path)?;
+        // Write all colors
+        std::fs::write(
+            colorset_path.join("Contents.json"),
+            generate_contents(Color::from_str(color).unwrap()),
+        )?;
+    }
+
+    Ok(())
+}
+
+/// Generate the `Contents.json` for the palette folder.
 fn generate_folder_contents() -> String {
     let contents_json = json! {
         {
@@ -99,6 +131,7 @@ fn generate_folder_contents() -> String {
     serde_json::to_string_pretty(&contents_json).expect("json should be valid")
 }
 
+/// Generate the `Contents.json` for the `.colorset` folder.
 fn generate_contents(color: Color) -> String {
     let contents_json = json! {
         {
