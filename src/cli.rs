@@ -42,22 +42,29 @@ impl ToString for Sorting {
 pub enum Cli {
     #[command(about = "Search for color palettes")]
     Search {
+        /// Search for palettes with at most N colors
         #[arg(long, conflicts_with_all = ["min", "exact"])]
         max: Option<u16>,
+
+        /// Search for palettes with at least N colors
         #[arg(long, conflicts_with_all = ["max", "exact"])]
         min: Option<u16>,
+
+        /// Search for palettes with exactly N colors
         #[arg(long, conflicts_with_all = ["max", "min"])]
         exact: Option<u16>,
 
+        /// Show page N
         #[arg(short, long)]
-        page: Option<u16>,
+        page: Option<u16>, // TODO: expand to support multiple pages
 
+        /// Search results sorting
         #[arg(long, default_value_t = Sorting::Default)]
         sorting: Sorting,
 
-        // NOTE: expand this to perform multiple searches
+        /// Search for palettes with a tag
         #[arg(long)]
-        tag: Option<String>,
+        tag: Option<String>, // TODO: expand this to perform multiple searches
     },
     #[command(about = "Download a color palette")]
     Download {
