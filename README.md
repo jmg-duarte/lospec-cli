@@ -60,24 +60,30 @@ cargo install --path .
 To search for color palettes, use the `search` command followed by your query:
 
 ```
-# Search for
-# * containing the tag "purple"
-# * a palette with a maximum of 8 colors
-# * show the second page
-# * sort results alphabetically
 lospec search --tag purple --max 8 -p 2 --sorting az
 ```
+
+In other words:
+* `--tag "purple"` — search for the color schemes with a "purple" tag
+* `--max 8` — search for a palette with a maximum of 8 colors
+* `-p 2` — show the second page of results
+* `--sorting az` — sort results alphabetically
+
 
 ### Downloading Color Palettes
 
 To download a color palette, use the `download` command followed by the palette's slug:
 
 ```
-# Download the `sls08` palette and save as XCode's `.colorset`
 lospec download slso8 -f colorset
 ```
+
+In other words:
+* `download sls08` — download the `sls08` palette
+* `-f colorset` — save the palette in XCode's `.colorset` format
 
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
