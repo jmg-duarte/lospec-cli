@@ -10,12 +10,55 @@ use thiserror::Error;
 use crate::palette::Color;
 
 #[derive(Clone, Debug)]
+pub enum PngSize {
+    /// 1x1px
+    X1,
+    /// 8x8px
+    X8,
+    /// 32x32px
+    X32,
+}
+
+impl PngSize {
+    fn slug(&self) -> &'static str {
+        match self {
+            PngSize::X1 => "-1x",
+            PngSize::X8 => "-8x",
+            PngSize::X32 => "-32x",
+        }
+    }
+}
+
+impl ValueEnum for PngSize {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[Self::X1, Self::X8, Self::X32]
+    }
+
+    fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
+        Some(PossibleValue::new(match self {
+            Self::X1 => "x1",
+            Self::X8 => "x8",
+            Self::X32 => "x32",
+        }))
+    }
+}
+
+#[derive(Clone, Debug)]
 pub enum Format {
     /// Xcode's `.colorset` folder format
     Colorset,
     /// List of hex values
     Hex,
-    // TODO: look into https://lospec.com/palettes/api
+    /// PNG image
+    Png,
+    /// JASC Pal file
+    Pal,
+    /// Photoshop ASE file
+    Ase,
+    /// Paint.NET TXT file
+    Txt,
+    /// GIMP GPL file
+    Gpl,
 }
 
 impl Format {
@@ -23,19 +66,37 @@ impl Format {
     fn file_extension(&self) -> &'static str {
         match self {
             Format::Colorset | Format::Hex => "hex",
+            Format::Png => "png",
+            Format::Pal => "pal",
+            Format::Ase => "ase",
+            Format::Txt => "txt",
+            Format::Gpl => "gpl",
         }
     }
 }
 
 impl ValueEnum for Format {
     fn value_variants<'a>() -> &'a [Self] {
-        &[Self::Colorset, Self::Hex]
+        &[
+            Self::Colorset,
+            Self::Hex,
+            Self::Png,
+            Self::Pal,
+            Self::Ase,
+            Self::Txt,
+            Self::Gpl,
+        ]
     }
 
     fn to_possible_value(&self) -> Option<clap::builder::PossibleValue> {
         Some(PossibleValue::new(match self {
-            Format::Colorset => "colorset",
-            Format::Hex => "hex",
+            Self::Colorset => "colorset",
+            Self::Hex => "hex",
+            Self::Png => "png",
+            Self::Pal => "pal",
+            Self::Ase => "ase",
+            Self::Txt => "txt",
+            Self::Gpl => "gpl",
         }))
     }
 }
@@ -57,16 +118,30 @@ pub struct Download {
     path: PathBuf,
     /// Output file format.
     format: Format,
+    /// Output file size (only if PNG).
+    size: Option<PngSize>,
 }
 
 impl Download {
-    pub fn new(slug: String, path: PathBuf, format: Format) -> Self {
-        Self { slug, path, format }
+    pub fn new(slug: String, path: PathBuf, format: Format, size: Option<PngSize>) -> Self {
+        Self {
+            slug,
+            path,
+            format,
+            size,
+        }
     }
 
     /// Execute the download request.
-    pub async fn execute(self) -> Result<(), Error> {
+    pub async fn execute(mut self) -> Result<(), Error> {
         let client = reqwest::Client::new();
+
+        match (&self.format, &self.size) {
+            (Format::Png, None) => self.slug.push_str(PngSize::X32.slug()),
+            (Format::Png, Some(size)) => self.slug.push_str(size.slug()),
+            _ => {}
+        }
+
         let response = client
             .get(format!(
                 "https://lospec.com/palette-list/{}.{}",
@@ -82,7 +157,7 @@ impl Download {
                 let colors = contents.split("\n").filter(|s| !s.is_empty());
                 export_colorset(self.path, colors).map_err(Error::IoError)
             }
-            Format::Hex => {
+            Format::Hex | Format::Ase | Format::Gpl | Format::Pal | Format::Png | Format::Txt => {
                 std::fs::write(self.path, response.bytes().await?).map_err(Error::IoError)
             }
         }

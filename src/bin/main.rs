@@ -48,7 +48,12 @@ async fn main() -> Result<(), Error> {
 
             search.execute().await?;
         }
-        Cli::Download { slug, path, format } => {
+        Cli::Download {
+            slug,
+            path,
+            format,
+            size,
+        } => {
             Download::new(
                 slug.clone(),
                 path.unwrap_or_else(|| {
@@ -57,6 +62,7 @@ async fn main() -> Result<(), Error> {
                         .join(slug)
                 }),
                 format,
+                size,
             )
             .execute()
             .await?;

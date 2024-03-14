@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 use clap::{Parser, ValueEnum};
 
-use crate::cmd::download::Format;
+use crate::cmd::download::{Format, PngSize};
 
 #[derive(Clone, Debug)]
 pub enum Sorting {
@@ -78,5 +78,9 @@ pub enum Cli {
         /// The output format
         #[arg(short, long)]
         format: Format,
+
+        /// The output file size, no-op if the format is not "png"
+        #[arg(short, long)]
+        size: Option<PngSize>,
     },
 }
